@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>File Manager</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f7fa;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2rem;
+      color: #2c3e50;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+      display: grid;
+      gap: 20px;
+    }
+
+    .card {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 1.2rem;
+      color: #34495e;
+      border-left: 4px solid #3498db;
+      padding-left: 8px;
+    }
+
+    input[type="file"],
+    input[type="text"] {
+      width: calc(100% - 20px);
+      padding: 10px;
+      margin-top: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+
+    button {
+      margin-top: 12px;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      background: #3498db;
+      color: white;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #2980b9;
+    }
+
+    #fileList {
+      list-style: none;
+      padding-left: 0;
+      margin-top: 10px;
+    }
+
+    #fileList li {
+      background: #ecf0f1;
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>📂 File Manager</h1>
+
+  <div class="container">
+    <!-- Upload Section -->
+    <div class="card">
+      <h2>Upload File</h2>
+      <input type="file" id="uploadInput">
+      <button onclick="uploadFile()">Upload</button>
+    </div>
+
+    <!-- List Files -->
+    <div class="card">
+      <h2>List Files</h2>
+      <button onclick="listFiles()">Show Files</button>
+      <ul id="fileList"></ul>
+    </div>
+
+    <!-- Delete File -->
+    <div class="card">
+      <h2>Delete File</h2>
+      <input type="text" id="deleteInput" placeholder="Enter filename">
+      <button onclick="deleteFile()">Delete</button>
+    </div>
+
+    <!-- Download File -->
+    <div class="card">
+      <h2>Download File</h2>
+      <input type="text" id="downloadInput" placeholder="Enter filename">
+      <button onclick="downloadFile()">Download</button>
+    </div>
+  </div>
+
+
+
+
+  <script>
+    const baseUrl = "http://127.0.0.1:8000";
+
+
+    async function uploadFile() 
+    {
+  const fileInput = document.getElementById("uploadInput");
+  const file = fileInput.files[0];
+  if (!file) return alert("Please select a file");
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const res = await fetch(`${baseUrl}/upload`, {
+      method: "POST",
+      body: formData
+    });
+
+    if (!res.ok) {
+      // backend returned error (e.g., 400, 500)
+      const err = await res.json();
+      alert("Error: " + err.detail);
+    } else {
+      const msg = await res.json();
+      alert("✅ Success: " + JSON.stringify(msg));
+    }
+  } catch (err) {
+    alert("❌ Network error: " + err.message);
+  }
+}
+
+async function listFiles(){
+
+  const res  = await fetch(`${baseUrl}/files`)
+  const data = await res.json()
+
+  const fileList = document.getElementById("fileList")
+  fileList.innerHTML = "";
+
+  if(data.files){
+
+    data.files.forEach(f => 
+    {
+      const li = document.createElement("li")
+      li.textContent = f
+      fileList.appendChild(li)
+    });
+  }
+  else
+  {
+    alert(data.message)
+  }
+
+
+}
+
+  async function deleteFile(){
+
+    const filename = document.getElementById("deleteInput").value;
+
+    if (!filename)
+      return alert("Enter Filename!");
+  
+    const res = await fetch(`${baseUrl}/delete/${filename}`,
+      {method: "DELETE"}
+
+    );
+    alert(await res.text());
+
+
+
+
+
+    }
+
+  async function downloadFile(){
+
+    const filename = document.getElementById("downloadInput").value
+
+    if(!filename) return alert("Enter Filename!");
+    const res = await fetch(`${baseUrl}/download/${filename}`);
+    if (res.ok){
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+    else{
+      alert("Error" + res.status);
+    }
+
+
+
+  }
+
+
+
+
+
+  </script>
+
+</body>
+</html>
